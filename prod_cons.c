@@ -3,7 +3,7 @@
   implemeted struct and load function
   load function claculates 10 sine values
   -Todo:
-      -use arguments in load function
+      -use arguments in load function-DONE
       -use more threads
       -time
       -remove sleep
@@ -33,18 +33,20 @@ typedef struct {
 } workFunction;
 
 void* work(void* arg) { //TODO: use arg
-    // sum 100 sin values for no reason
-    float result = 0;
-    for (int i = 0; i < 100; i++) {
-        result = sin(i*3.14/180);
-    }
-    char* str = "calculated stuff";
-    void* ptr = (void*) str;
-    return ptr;
+  // calculate  sin values for thread load
+  int* loops = (int*) arg;
+  float result = 0;
+  for (int i = 0; i < *loops; i++) {
+      result = sin(i*3.14/180);
+  }
+  char* str = "calculated stuff";
+  void* ptr = (void*) str;
+  return ptr;
 }
 
 // initialize thread load 
-workFunction thread_load = {work, (void*) 100 };
+int ld = 1000;
+workFunction thread_load = {work, (void*) &ld};
 //**********************
 
 typedef struct {
