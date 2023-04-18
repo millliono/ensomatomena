@@ -28,11 +28,11 @@ void *consumer (void *args);
 
 //*****************
 typedef struct {
-  void * (*work)();
-  // void * arg;
+  void * (*work)(void *);
+  void * arg;
 } workFunction;
 
-void* work() { //TODO: use arg
+void* work(void* arg) { //TODO: use arg
     // sum 100 sin values for no reason
     float result = 0;
     for (int i = 0; i < 100; i++) {
@@ -44,7 +44,7 @@ void* work() { //TODO: use arg
 }
 
 // initialize thread load 
-workFunction thread_load = { work };
+workFunction thread_load = {work, (void*) 100 };
 //**********************
 
 typedef struct {
@@ -119,7 +119,7 @@ void *consumer (void *q)
     queueDel (fifo, &d);
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notFull);
-    printf ("consumer:  %s\n", (char*) thread_load.work());
+    printf ("consumer:  %s\n", (char*) thread_load.work(thread_load.arg));
     sleep(0);
   }
 
