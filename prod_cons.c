@@ -4,10 +4,10 @@
   load function claculates 10 sine values
   -Todo:
       -use arguments in load function-DONE
-      -use more threads
+      -use more threads-DONE
       -time
-      -remove sleep
-      -consumer infinite loop
+      -remove sleep -DONE
+      -consumer infinite loop - NEVER STOPS
       -report
 
 */
@@ -19,9 +19,13 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
+
 
 #define QUEUESIZE 10
 #define LOOP 20
+#define NUM_CONSUMER 3
+#define NUM_PRODUCER 3
 
 void *producer (void *args);
 void *consumer (void *args);
@@ -45,7 +49,7 @@ void* work(void* arg) { //TODO: use arg
 }
 
 // initialize thread load 
-int ld = 1000;
+int ld = 100;
 workFunction thread_load = {work, (void*) &ld};
 //**********************
 
@@ -65,17 +69,48 @@ void queueDel (queue *q, workFunction *out);
 int main ()
 {
   queue *fifo;
-  pthread_t pro, con;
+  pthread_t pros[NUM_PRODUCER];
+  pthread_t cons[NUM_CONSUMER];
+  
+  int rc;
+  void *status;
+
 
   fifo = queueInit ();
   if (fifo ==  NULL) {
     fprintf (stderr, "main: Queue Init failed.\n");
     exit (1);
   }
-  pthread_create (&pro, NULL, producer, fifo);
-  pthread_create (&con, NULL, consumer, fifo);
-  pthread_join (pro, NULL);
-  pthread_join (con, NULL);
+
+  for(int t=0; t<NUM_PRODUCER; t++) {
+  rc = pthread_create(&pros[t], NULL, producer, fifo);
+  if (rc) {
+    printf("ERROR; return code from pthread_create() is %d\n", rc);
+    exit(-1);
+    }
+  }
+  for(int t=0; t<NUM_CONSUMER; t++) {
+  rc = pthread_create(&cons[t], NULL, consumer, fifo);
+  if (rc) {
+    printf("ERROR; return code from pthread_create() is %d\n", rc);
+    exit(-1);
+    }
+  }
+  for(int t=0; t<NUM_PRODUCER; t++) {
+       rc = pthread_join(pros[t], &status);
+       if (rc) {
+          printf("ERROR; return code from pthread_join() is %d\n", rc);
+          exit(-1);
+          }
+  }
+  for(int t=0; t<NUM_CONSUMER; t++) {
+      rc = pthread_join(cons[t], &status);
+      if (rc) {
+        printf("ERROR; return code from pthread_join() is %d\n", rc);
+        exit(-1);
+        }
+  }
+
   queueDelete (fifo);
 
   return 0;
@@ -98,7 +133,6 @@ void *producer (void *q)
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notEmpty);
     printf ("producer:  input item\n");
-    sleep (0);
   }
 
   return (NULL);
@@ -112,7 +146,7 @@ void *consumer (void *q)
 
   fifo = (queue *)q;
 
-  for (i = 0; i < LOOP; i++) {
+  for (int i = 0; i < LOOP; i++) {
     pthread_mutex_lock (fifo->mut);
     while (fifo->empty) {
       printf ("consumer: queue EMPTY.\n");
@@ -122,7 +156,6 @@ void *consumer (void *q)
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notFull);
     printf ("consumer:  %s\n", (char*) thread_load.work(thread_load.arg));
-    sleep(0);
   }
 
   return (NULL);
