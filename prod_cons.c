@@ -5,7 +5,8 @@
   -Todo:
       -use arguments in load function-DONE
       -use more threads-DONE
-      -time
+      -time -DONE
+      -different num of thread types
       -remove sleep -DONE
       -consumer infinite loop - NEVER STOPS
       -report
@@ -51,8 +52,14 @@ void* work(void* arg) { //TODO: use arg
 // initialize thread load 
 int ld = 100;
 workFunction thread_load = {work, (void*) &ld};
-//**********************
 
+//**********************
+struct timeval start_time, end_time;
+unsigned long produce_time = 0;
+unsigned long consume_time = 0;
+
+
+//***********************
 typedef struct {
   workFunction buf[QUEUESIZE];
   long head, tail;
@@ -103,16 +110,16 @@ int main ()
           exit(-1);
           }
   }
-  for(int t=0; t<NUM_CONSUMER; t++) {
-      rc = pthread_join(cons[t], &status);
-      if (rc) {
-        printf("ERROR; return code from pthread_join() is %d\n", rc);
-        exit(-1);
-        }
-  }
-
+    for(int t=0; t<NUM_CONSUMER; t++) {
+       rc = pthread_join(cons[t], &status);
+        if (rc) {
+          printf("ERROR; return code from pthread_join() is %d\n", rc);
+          exit(-1);
+          }
+    }
+  
   queueDelete (fifo);
-
+  printf("mean elapsed time (us): %lu\n ", (consume_time - produce_time)/LOOP*NUM_PRODUCER);
   return 0;
 }
 
@@ -129,6 +136,8 @@ void *producer (void *q)
       printf ("producer: queue FULL.\n");
       pthread_cond_wait (fifo->notFull, fifo->mut);
     }
+    gettimeofday(&start_time, NULL);
+    produce_time += start_time.tv_sec * 1000000 + start_time.tv_usec;
     queueAdd (fifo, thread_load);
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notEmpty);
@@ -152,6 +161,8 @@ void *consumer (void *q)
       printf ("consumer: queue EMPTY.\n");
       pthread_cond_wait (fifo->notEmpty, fifo->mut);
     }
+    gettimeofday(&end_time, NULL);
+    consume_time += end_time.tv_sec * 1000000 + end_time.tv_usec;
     queueDel (fifo, &d);
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notFull);
