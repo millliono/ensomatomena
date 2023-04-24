@@ -52,8 +52,7 @@ void* work(void* arg) {
 }
 
 // initialize thread load 
-int ld = 100;
-workFunction thread_load = {work, (void*) &ld, 0};
+workFunction thread_load;
 
 //timing
 double elapsed_time = 0;
@@ -124,6 +123,9 @@ void *producer (void *q)
 {
   queue *fifo;
   fifo = (queue *)q;
+    
+  // reps is the argument to the load function
+  int reps = 100;
 
   for (int i = 0; i < LOOP; i++) {
     pthread_mutex_lock (fifo->mut);
@@ -131,6 +133,8 @@ void *producer (void *q)
       printf ("producer: queue FULL.\n");
       pthread_cond_wait (fifo->notFull, fifo->mut);
     }
+    thread_load.work = work;
+    thread_load.arg = (void*) &reps;
     struct timeval produce_time;
     gettimeofday(&produce_time, NULL);
     double t1 = produce_time.tv_sec * 1000000 + produce_time.tv_usec;
