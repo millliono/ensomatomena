@@ -1,7 +1,7 @@
 /*prod cons works with one of each thread type
   necessary changes to the code
   implemeted struct and load function
-  load function claculates 10 sine values
+  load function claculates 10 sin values
   -Todo:
       -use arguments in load function-DONE
       -use more threads-DONE
@@ -25,8 +25,8 @@
 
 #define QUEUESIZE 10
 #define LOOP 20
-#define NUM_CONSUMER 1
-#define NUM_PRODUCER 1
+#define NUM_PRODUCER 10
+#define NUM_CONSUMER 20
 
 void *producer (void *args);
 void *consumer (void *args);
@@ -51,10 +51,7 @@ void* work(void* arg) {
   return ptr;
 }
 
-// initialize thread load 
 workFunction thread_load;
-
-//timing
 double elapsed_time = 0;
 
 typedef struct {
@@ -106,14 +103,12 @@ int main ()
           exit(-1);
           }
   }
-    for(int t=0; t<NUM_CONSUMER; t++) {
-       rc = pthread_join(cons[t], &status);
-        if (rc) {
-          printf("ERROR; return code from pthread_join() is %d\n", rc);
-          exit(-1);
-          }
-    }
-  
+  while (!fifo->empty){
+      
+  }
+  for(int t=0; t<NUM_CONSUMER; t++) {
+      pthread_cancel(cons[t]);
+  }
   queueDelete (fifo);
   printf("mean elapsed time (us): %f\n ", elapsed_time / LOOP*NUM_PRODUCER);
   return 0;
@@ -144,7 +139,6 @@ void *producer (void *q)
     pthread_cond_signal (fifo->notEmpty);
     printf ("producer:  input item\n");
   }
-
   return (NULL);
 }
 
@@ -155,10 +149,11 @@ void *consumer (void *q)
 
   fifo = (queue *)q;
 
-  for (int i = 0; i < LOOP; i++) {
+  while(1) {
     pthread_mutex_lock (fifo->mut);
     while (fifo->empty) {
       printf ("consumer: queue EMPTY.\n");
+      printf("Thread %ld sleeping\n", pthread_self());
       pthread_cond_wait (fifo->notEmpty, fifo->mut);
     }
     struct timeval consume_time;
@@ -170,7 +165,7 @@ void *consumer (void *q)
     elapsed_time += t2 - d.produce_time;
     printf ("consumer:  %s\n", (char*) d.work(d.arg));
   }
-
+  printf("Thread %ld returned\n", pthread_self());
   return (NULL);
 }
 
