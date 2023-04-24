@@ -25,8 +25,8 @@
 
 #define QUEUESIZE 10
 #define LOOP 20
-#define NUM_CONSUMER 3
-#define NUM_PRODUCER 3
+#define NUM_CONSUMER 1
+#define NUM_PRODUCER 1
 
 void *producer (void *args);
 void *consumer (void *args);
@@ -62,6 +62,7 @@ unsigned long consume_time = 0;
 //***********************
 typedef struct {
   workFunction buf[QUEUESIZE];
+  
   long head, tail;
   int full, empty;
   pthread_mutex_t *mut;
@@ -81,7 +82,6 @@ int main ()
   
   int rc;
   void *status;
-
 
   fifo = queueInit ();
   if (fifo ==  NULL) {
@@ -126,11 +126,9 @@ int main ()
 void *producer (void *q)
 {
   queue *fifo;
-  int i;
-
   fifo = (queue *)q;
 
-  for (i = 0; i < LOOP; i++) {
+  for (int i = 0; i < LOOP; i++) {
     pthread_mutex_lock (fifo->mut);
     while (fifo->full) {
       printf ("producer: queue FULL.\n");
@@ -150,7 +148,6 @@ void *producer (void *q)
 void *consumer (void *q)
 {
   queue *fifo;
-  int i;
   workFunction d;
 
   fifo = (queue *)q;
