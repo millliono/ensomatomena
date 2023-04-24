@@ -31,13 +31,15 @@
 void *producer (void *args);
 void *consumer (void *args);
 
-//*****************
+// struct that contains load
+// and timestamp
 typedef struct {
   void * (*work)(void *);
   void * arg;
+  double produce_time;
 } workFunction;
 
-void* work(void* arg) { //TODO: use arg
+void* work(void* arg) {
   // calculate  sin values for thread load
   int* loops = (int*) arg;
   float result = 0;
@@ -51,18 +53,13 @@ void* work(void* arg) { //TODO: use arg
 
 // initialize thread load 
 int ld = 100;
-workFunction thread_load = {work, (void*) &ld};
+workFunction thread_load = {work, (void*) &ld, 0};
 
-//**********************
-struct timeval start_time, end_time;
-unsigned long produce_time = 0;
-unsigned long consume_time = 0;
+//timing
+double elapsed_time = 0;
 
-
-//***********************
 typedef struct {
   workFunction buf[QUEUESIZE];
-  
   long head, tail;
   int full, empty;
   pthread_mutex_t *mut;
@@ -119,7 +116,7 @@ int main ()
     }
   
   queueDelete (fifo);
-  printf("mean elapsed time (us): %lu\n ", (consume_time - produce_time)/LOOP*NUM_PRODUCER);
+  printf("mean elapsed time (us): %f\n ", elapsed_time / LOOP*NUM_PRODUCER);
   return 0;
 }
 
@@ -134,8 +131,10 @@ void *producer (void *q)
       printf ("producer: queue FULL.\n");
       pthread_cond_wait (fifo->notFull, fifo->mut);
     }
-    gettimeofday(&start_time, NULL);
-    produce_time += start_time.tv_sec * 1000000 + start_time.tv_usec;
+    struct timeval produce_time;
+    gettimeofday(&produce_time, NULL);
+    double t1 = produce_time.tv_sec * 1000000 + produce_time.tv_usec;
+    thread_load.produce_time = t1;
     queueAdd (fifo, thread_load);
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notEmpty);
@@ -158,12 +157,14 @@ void *consumer (void *q)
       printf ("consumer: queue EMPTY.\n");
       pthread_cond_wait (fifo->notEmpty, fifo->mut);
     }
-    gettimeofday(&end_time, NULL);
-    consume_time += end_time.tv_sec * 1000000 + end_time.tv_usec;
+    struct timeval consume_time;
+    gettimeofday(&consume_time, NULL);
+    double t2 = consume_time.tv_sec * 1000000 + consume_time.tv_usec;
     queueDel (fifo, &d);
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notFull);
-    printf ("consumer:  %s\n", (char*) thread_load.work(thread_load.arg));
+    elapsed_time += t2 - d.produce_time;
+    printf ("consumer:  %s\n", (char*) d.work(d.arg));
   }
 
   return (NULL);
