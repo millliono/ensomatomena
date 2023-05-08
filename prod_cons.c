@@ -1,12 +1,5 @@
 /*
-  -Todo:
-      -use arguments in load function-DONE
-      -use more threads-DONE
-      -time -DONE
-      -different num of thread types
-      -remove sleep -DONE
-      -consumer infinite loop - NEVER STOPS
-      -report
+  Aimilios Dragkinis 9364. (2023)
 */
 
 #include <pthread.h>
@@ -18,8 +11,8 @@
 
 
 #define QUEUESIZE 10
-#define LOOP 200
-#define NUM_PRODUCER 3
+#define LOOP 2000
+#define NUM_PRODUCER 2
 #define NUM_CONSUMER 2
 
 void *producer (void *args);
@@ -47,6 +40,7 @@ void* work(void* arg) {
 
 workFunction thread_load;
 double elapsed_time = 0;
+FILE *fp;
 
 typedef struct {
   workFunction buf[QUEUESIZE];
@@ -104,7 +98,11 @@ int main ()
       pthread_cancel(cons[t]);
   }
   queueDelete (fifo);
-  printf("mean elapsed time (us): %f\n ", (elapsed_time / LOOP*NUM_PRODUCER));
+  double t = elapsed_time / LOOP*NUM_PRODUCER;
+  printf("mean elapsed time (us): %f\n ", t);
+  fp = fopen("measurements.csv", "a");
+  fprintf(fp, "%f,", t);
+  fclose(fp);
   return 0;
 }
 
