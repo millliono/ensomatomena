@@ -1,7 +1,4 @@
-/*prod cons works with one of each thread type
-  necessary changes to the code
-  implemeted struct and load function
-  load function claculates 10 sin values
+/*
   -Todo:
       -use arguments in load function-DONE
       -use more threads-DONE
@@ -10,10 +7,7 @@
       -remove sleep -DONE
       -consumer infinite loop - NEVER STOPS
       -report
-
 */
-
-//producer-consumer
 
 #include <pthread.h>
 #include <stdio.h>
@@ -24,9 +18,9 @@
 
 
 #define QUEUESIZE 10
-#define LOOP 20
-#define NUM_PRODUCER 10
-#define NUM_CONSUMER 20
+#define LOOP 200
+#define NUM_PRODUCER 3
+#define NUM_CONSUMER 2
 
 void *producer (void *args);
 void *consumer (void *args);
@@ -104,13 +98,13 @@ int main ()
           }
   }
   while (!fifo->empty){
-      
+    printf("main waits cons to clean up the buffer\n");
   }
   for(int t=0; t<NUM_CONSUMER; t++) {
       pthread_cancel(cons[t]);
   }
   queueDelete (fifo);
-  printf("mean elapsed time (us): %f\n ", elapsed_time / LOOP*NUM_PRODUCER);
+  printf("mean elapsed time (us): %f\n ", (elapsed_time / LOOP*NUM_PRODUCER));
   return 0;
 }
 
@@ -160,9 +154,9 @@ void *consumer (void *q)
     gettimeofday(&consume_time, NULL);
     double t2 = consume_time.tv_sec * 1000000 + consume_time.tv_usec;
     queueDel (fifo, &d);
+    elapsed_time += (t2 - d.produce_time);
     pthread_mutex_unlock (fifo->mut);
     pthread_cond_signal (fifo->notFull);
-    elapsed_time += t2 - d.produce_time;
     printf ("consumer:  %s\n", (char*) d.work(d.arg));
   }
   printf("Thread %ld returned\n", pthread_self());
